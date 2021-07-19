@@ -35,8 +35,9 @@ You can start such a daemon manually within Emacs by executing `M-x server-start
 There are many options that let you customize how `SPC` talks to your Emacs daemon.
 Running `SPC --help` shows the command usage, included here for reference:
 
-<pre>
+
 <!--BEGIN_HELP-->
+```
 SPC - Send a SPC keyboard macro to Spacemacs or DOOM Emacs via emacsclient.
 
 USAGE
@@ -176,8 +177,9 @@ See https://github.com/vic/SPC for issues, usage examples, integrations and
 contributing awesome ideas on how to use SPC to control Emacs from the terminal.
 
 Made with <33 by vic <http://twitter.com/oeiuwq>
+```
 <!--END_HELP-->
-</pre>
+
 
 
 ## Integrations
