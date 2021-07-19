@@ -2,8 +2,8 @@
 
 An utility for sending keyboard macros to Spacemacs or DOOM Emacs via emacsclient.
 
-It's intended to be used mainly from scripts, or as integration callback to make other
-applications talk to your DOOM/Spacemacs. See the [Integrations] section.
+`SPC` was [born](https://github.com/vic/vix/blob/c55260f9591c7b243145fbbab37d68e775783a8d/vix/modules/vic/emacs/default.nix#L49) as an integration callback utility to make other
+applications talk DOOM/Spacemacs.
 
 For example, you can instruct iTerm2 to open a file on click by giving it the following
 Spacemacs macro using evil commands:
