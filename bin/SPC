@@ -1,0 +1,285 @@
+#!/usr/bin/env bash
+#
+# Copyright 2021 - Victor Hugo Borja <vborja@apache.org>
+#
+
+function usage {
+ cat <<-'EOF'
+SPC - Send a SPC keyboard macro to Spacemacs or DOOM Emacs via emacsclient.
+
+USAGE
+
+  SPC [OPTION..] [KEYS..] [-- emacsclient options]
+
+KEYS are key sequence strings in the format accepted by `(kbd)` and as
+returned by commands such as `C-h k` in Emacs.
+
+
+OPTIONS
+
+  -D, --describe
+                      Causes emacs to print a brief description of the received
+                      key sequence. This option is useful when debugging or
+                      constructing your first keyboard macro.
+
+  -r, --raw <INPUT>
+                      Sends INPUT as if it was directly typed on Emacs.
+                      Since raw inputs can be any byte sequence they are encoded
+                      using the `base64` command and decoded on the Emacs daemon.
+
+                      This is useful for sending keys that otherwise would be
+                      interpreted as options for SPC itself.
+
+                      eg. `-r --lisp` will send `(kbd "- - l i s p")` to Emacs.
+
+  -f, --file-raw <FILE>
+                      Sends all content from FILE as if directly typed on Emacs.
+
+  -f-, --stdin
+                      Sends all content from STDIN as if directly typed on Emacs.
+
+  -l, --lisp <CODE>
+                      Expects CODE to be an Emacs lisp expression that produces a
+                      keycode vector.
+
+                      eg. `-l '(kbd "M-x help RET")'`
+
+  -L, --leader <KEYS>
+                      Use KEYS as leader at start of keyboard macro.
+                      Defaults to `SPC` in Spacemacs and DOOM Emacs.
+
+                      Can also be used to remove the leader, eg:
+                      `SPC -L '' M-x doctor RET`
+
+  -W, --wrapper <WRAPPER>
+                      Wrap the keyboard macro invocation inside custom lisp.
+                      The WRAPPER code must include a `SPC_ELISP` placeholder
+                      that will be replaced with the actual macro invocation.
+
+                      This option allows you to eg, select a custom buffer or
+                      doing anything special before/after the kbd macro is sent.
+
+                      eg. `-W '(message "%s" (quote SPC_ELISP))'` will just echo
+                      the generated code inside Emacs and actually do nothing.
+
+  -WPRINT
+                      A predefined WRAPPER that prints the current buffer text.
+
+                      eg. in DOOM Emacs the following command will print the ORG
+                          agenda headlines matching "standup":
+                      `SPC oAM standup RET -WPRINT`
+
+
+
+  -M, --macro-caller <MACRO_CALLER>
+                      Custom Emacs lisp code that executes a keyboard macro.
+                      The MACRO_CALLER code must include a `SPC_ELISP`
+                      placeholder that will be replaced with the actual
+                      keys vector.
+
+                      By default it uses `(execute-kbd-macro SPC_ELISP)`
+                      but can be overriden to and not evaluate the keys at all.
+
+                      eg. `-M '(key-description SPC_ELISP)'` just prints the
+                      keysequence that Emacs received.
+
+  --dry-run
+                      Just print the emacsclient command that would be run.
+
+  -h, --help
+                      Show this help and exit.
+
+  --
+                      Stop parsing arguments.
+                      All remaining arguments are given directly to the
+                      emacsclient command.
+
+
+
+ENVIRONMENT VARIABLES
+
+  SPC_LEADER          The leader key used for sending keychords.
+
+                      Defaults to `SPC` on both Spacemacs and DOOM Emacs.
+
+  SPC_WRAPPER         Equivalent to always using a `--wrapper` option.
+
+  SPC_MACRO_CALLER    Equivalent to always using a `--macro-caller` option.
+
+  SPC_CLIENT_CMD      The command used to send emacslisp code.
+                      It must at least support the `--eval LISP` option.
+
+                      Defaults to `emacsclient`
+
+  SPC_CLIENT_OPTS     Additional options for emacsclient.
+                      See `emacsclient --help`.
+
+                      For example, setting this to `--tty` will
+                      tell emacsclient to always use the terminal UI.
+
+EXAMPLES
+
+  # Describe what `SPC f f` does
+  SPC -D ff          # => SPC f f runs the command counsel-find-file
+
+  # Remove leader, describe `M-x`
+  SPC -L '' -D M-x   # => M-x runs the command counsel-M-x
+
+  # find file in remote Emacs and go to 10th line
+  SPC ff -r "$PWD/README.md" RET 10 gg
+
+  # open Magit rebase interactive in current terminal
+  SPC g/ri -- --tty
+
+  # on DOOM Emacs: create a new ORG Agenda TODO and download an attached URL
+  SPC Xt C-c C-a u -r "https://example.org" RET -r "Checkout this website" RET C-c C-c
+
+  # on DOOM Emacs: open an scratch buffer and pretty-print as json to the terminal
+  SPC bXi -f some.json ESC -r ':(json-pretty-print-buffer)' RET -WPRINT
+
+
+REPORTING ISSUES
+
+See https://github.com/vic/SPC for issues, usage examples, integrations and
+contributing awesome ideas on how to use SPC to control Emacs from the terminal.
+
+Made with <33 by vic <http://twitter.com/oeiuwq>
+EOF
+}
+
+W_PRINTBUF='(save-excursion SPC_ELISP (princ (buffer-substring-no-properties (point-min) (point-max))))'
+W_DESCRIBE='(save-excursion (with-current-buffer "*scratch*" (princ (describe-key-briefly (list (cons SPC_ELISP nil))) )))'
+
+function quote64 {
+  echo -n '(base64-decode-string "'
+  base64 -i - -o - | tr -d '\n'
+  echo -n '")'
+}
+
+function vquote64 {
+  echo -n '(string-to-vector '
+  quote64
+  echo -n ')'
+}
+
+function vqKbd64 {
+  declare KEY="$(cat)"
+  declare SUB="$(echo -n "$KEY" | tr -c '[a-zA-Z0-9!/_-]' '@')"
+  if [ "$SUB" = "$KEY" ]; then
+    echo -n "(kbd \"$KEY\")"
+  else
+    echo -n "$KEY" | vquote64
+  fi
+}
+
+function emacs_string {
+  sed -e 's/\\n/\n/g' -e 's/\\//g' -e '1s/^"//' -e '$ s/"$//'
+}
+
+
+function SPC {
+ declare KEY CMD SPC_ELISP DRYRUN=0 WRAPPER="${SPC_WRAPPER}" MACRO_CALL="${SPC_MACRO_CALLER}" LEADER="${SPC_LEADER:-"SPC"}"
+ declare -a STATUS ARGV KEYS
+
+ # if no STDIN and no command line arguments given use some default
+ if [ -t 0 ] && [ -z "$*" ]; then
+   usage
+   return 1
+ fi
+
+ while [ -n "$1" ]; do
+   if [ "--" = "$1" ]; then
+     shift
+     break
+   fi
+   case "$1" in
+     "-h" | "--help") # print usage and exit
+       usage
+       return 0
+       ;;
+
+     "--dry-run") # print emacsclient command
+       DRYRUN=1
+       ;;
+
+     "-D" | "--describe")
+       WRAPPER="$W_DESCRIBE"
+       MACRO_CALL="SPC_ELISP"
+       ;;
+
+     "-M" | "--macro-caller") # Use next argument as code wrapper.
+       shift
+       MACRO_CALL="$1"
+       ;;
+
+     "-W" | "--wrapper") # Use next argument as code wrapper.
+       shift
+       WRAPPER="$1"
+       ;;
+
+     "-WPRINT")
+       WRAPPER="$W_PRINTBUF"
+       ;;
+
+     "-L" | "--leader") # Use next argument as leader.
+       shift
+       LEADER="$1"
+       ;;
+
+     "-l" | "--lisp") # Use next argument literally.
+       shift
+       KEYS+=("$1")
+       ;;
+
+     "-r" | "--raw") # Use next argument raw.
+       shift
+       KEYS+=("$(echo -n "$1" | vquote64)")
+       ;;
+
+     "-f-" | "--stdin") # Read raw content from STDIN
+       KEYS+=("$(vquote64)")
+       ;;
+
+     "-f" | "--file-raw") # Read raw content from FILE
+       shift
+       KEYS+=("$(vquote64 < "$1")")
+       ;;
+
+     *)
+       KEYS+=("$(echo -n "$1" | vqKbd64)")
+       ;;
+   esac
+   shift
+ done
+
+ ARGV=("${@}")
+ if [ -n "$SPC_CLIENT_OPTS" ]; then
+   ARGV+=("${SPC_CLIENT_OPTS[@]}")
+ fi
+
+ if [ -n "$LEADER" ]; then
+   KEYS=("$(echo -n "$LEADER" | vqKbd64)" "${KEYS[@]}")
+ fi
+
+ if [ -z "$MACRO_CALL" ]; then
+   SPC_ELISP="(call-interactively (lambda () (interactive) (execute-kbd-macro (vconcat ${KEYS[@]}))))"
+ else
+   SPC_ELISP="$(echo -n "$MACRO_CALL" | sed -e "s|SPC_ELISP|(vconcat ${KEYS[*]})|g")"
+ fi
+
+
+ if [ -n "$WRAPPER" ]; then
+   SPC_ELISP="$(echo -n "$WRAPPER" | IFS=$'' OFS=$'' sed -e "s|SPC_ELISP|$SPC_ELISP|g")"
+ fi
+
+ if [ "1" = "$DRYRUN" ]; then
+   echo ${SPC_CLIENT_CMD:-"emacsclient"} --eval "\"$(echo -n "$SPC_ELISP" | sed -e 's|"|\\"|g')\"" ${ARGV[@]}
+   return 0
+ fi
+
+ ARGV+=("--eval" "$SPC_ELISP")
+
+ ${SPC_CLIENT_CMD:-"emacsclient"} "${ARGV[@]}" | emacs_string
+}
+
+SPC "${@}"
