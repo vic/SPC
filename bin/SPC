@@ -163,8 +163,9 @@ function vquote64 {
 }
 
 function vqKbd64 {
-  declare KEY="$(cat)"
-  declare SUB="$(echo -n "$KEY" | tr -c '[a-zA-Z0-9!/_-]' '@')"
+  declare KEY SUB
+  KEY="$(cat)"
+  SUB="$(echo -n "$KEY" | tr -c 'a-zA-Z0-9!/_-' '@')"
   if [ "$SUB" = "$KEY" ]; then
     echo -n "(kbd \"$KEY\")"
   else
@@ -177,8 +178,8 @@ function emacs_string {
 }
 
 function SPC {
-  declare KEY CMD SPC_ELISP DRYRUN=0 WRAPPER="${SPC_WRAPPER}" MACRO_CALL="${SPC_MACRO_CALLER}" LEADER="${SPC_LEADER:-"SPC"}"
-  declare -a STATUS ARGV KEYS
+  declare KEY SPC_ELISP DRYRUN=0 WRAPPER="${SPC_WRAPPER}" MACRO_CALL="${SPC_MACRO_CALLER}" LEADER="${SPC_LEADER:-"SPC"}"
+  declare -a ARGV KEYS
 
   # if no STDIN and no command line arguments given use some default
   if [ -t 0 ] && [ -z "$*" ]; then
@@ -260,20 +261,21 @@ function SPC {
   if [ -z "$MACRO_CALL" ]; then
     MACRO_CALL="(call-interactively (lambda () (interactive) (execute-kbd-macro (SPC_KEYS))))"
   fi
-  SPC_ELISP="(cl-flet ((SPC_KEYS nil (vconcat ${KEYS[@]}))) ${MACRO_CALL[@]})"
+  SPC_ELISP="(cl-flet ((SPC_KEYS nil (vconcat ${KEYS[*]}))) ${MACRO_CALL[*]})"
 
   if [ -n "$WRAPPER" ]; then
-    SPC_ELISP="(cl-flet ((SPC_MACRO nil $SPC_ELISP)) ${WRAPPER[@]})"
+    SPC_ELISP="(cl-flet ((SPC_MACRO nil $SPC_ELISP)) ${WRAPPER[*]})"
   fi
 
   if [ "1" = "$DRYRUN" ]; then
-    echo ${SPC_CLIENT_CMD:-"emacsclient"} --eval "\"$(echo -n "$SPC_ELISP" | sed -e 's|"|\\"|g')\"" ${ARGV[@]}
+    echo "${SPC_CLIENT_CMD:-"emacsclient"} --eval \"$(echo -n "$SPC_ELISP" | sed -e 's|"|\\"|g')\" ${ARGV[*]}"
     return 0
   fi
 
   ARGV+=("--eval" "$SPC_ELISP")
 
-  ${SPC_CLIENT_CMD:-"emacsclient"} ${SPC_CLIENT_OPTS[@]} "${ARGV[@]}" | emacs_string
+  # shellcheck disable=SC2086 # SPC_CLIENT_OPTS should expand since it can be a single string with many options
+  ${SPC_CLIENT_CMD:-"emacsclient"} ${SPC_CLIENT_OPTS[*]} "${ARGV[@]}" | emacs_string
 }
 
 SPC "${@}"

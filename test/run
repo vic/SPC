@@ -1,0 +1,1 @@
+nix build -L --no-link -f test.nix

@@ -4,13 +4,16 @@
   inputs.flake-utils.inputs.nixpkgs.follows = "nixpkgs";
 
   outputs = { self, nixpkgs, flake-utils, ... }@inputs:
-    let allSystems = flake-utils.lib.defaultSystems ++ [ "aarch64-darwin" ];
-    in flake-utils.lib.eachSystem allSystems (system:
-      let
-        pkgs = import nixpkgs { inherit system; };
+    let
+      allSystems = flake-utils.lib.defaultSystems ++ ["aarch64-darwin"];
+      perSystem = (system:
+        let
+        pkgs = import nixpkgs {
+          system = if system == "aarch64-darwin" then "x86_64-darwin" else system;
+        };
         mkDerivation = builtins.trace system pkgs.stdenvNoCC.mkDerivation;
         SPC = pkgs.writeScriptBin "SPC" (builtins.readFile ./bin/SPC);
-        devPkgs = with pkgs; []; #  [ SPC shellcheck bats shfmt nixfmt ];
+        devPkgs = with pkgs; [ SPC shellcheck bats shfmt nixfmt ];
 
       in rec {
 
@@ -21,12 +24,22 @@
 
         checks.test = mkDerivation (with pkgs; {
           name = "test";
-          phases = ["check"];
-          check = ''
+          buildInputs = devPkgs;
+          phases = [ "shfmt" "shellcheck"];
+
+          shfmt = ''
             ${shfmt}/bin/shfmt -i 2 -ci -sr -d .
             touch $out
           '';
+
+          shellcheck = ''
+            ${shellcheck}/bin/shellcheck -s bash ${./.}/bin/SPC
+            touch $out
+          '';
+
         });
 
       });
+
+    in (flake-utils.lib.eachSystem allSystems perSystem);
 }
