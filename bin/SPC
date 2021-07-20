@@ -253,9 +253,6 @@ function SPC {
  done
 
  ARGV=("${@}")
- if [ -n "$SPC_CLIENT_OPTS" ]; then
-   ARGV+=("${SPC_CLIENT_OPTS[@]}")
- fi
 
  if [ -n "$LEADER" ]; then
    KEYS=("$(echo -n "$LEADER" | vqKbd64)" "${KEYS[@]}")
@@ -279,7 +276,7 @@ function SPC {
 
  ARGV+=("--eval" "$SPC_ELISP")
 
- ${SPC_CLIENT_CMD:-"emacsclient"} "${ARGV[@]}" | emacs_string
+ ${SPC_CLIENT_CMD:-"emacsclient"} ${SPC_CLIENT_OPTS[@]} "${ARGV[@]}" | emacs_string
 }
 
 SPC "${@}"
