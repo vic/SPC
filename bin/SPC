@@ -4,7 +4,7 @@
 #
 
 function usage {
- cat <<-'EOF'
+  cat <<- 'EOF'
 SPC - Send a SPC keyboard macro to Spacemacs or DOOM Emacs via emacsclient.
 
 USAGE
@@ -176,106 +176,104 @@ function emacs_string {
   sed -e 's/\\n/\n/g' -e 's/\\//g' -e '1s/^"//' -e '$ s/"$//'
 }
 
-
 function SPC {
- declare KEY CMD SPC_ELISP DRYRUN=0 WRAPPER="${SPC_WRAPPER}" MACRO_CALL="${SPC_MACRO_CALLER}" LEADER="${SPC_LEADER:-"SPC"}"
- declare -a STATUS ARGV KEYS
+  declare KEY CMD SPC_ELISP DRYRUN=0 WRAPPER="${SPC_WRAPPER}" MACRO_CALL="${SPC_MACRO_CALLER}" LEADER="${SPC_LEADER:-"SPC"}"
+  declare -a STATUS ARGV KEYS
 
- # if no STDIN and no command line arguments given use some default
- if [ -t 0 ] && [ -z "$*" ]; then
-   usage
-   return 1
- fi
+  # if no STDIN and no command line arguments given use some default
+  if [ -t 0 ] && [ -z "$*" ]; then
+    usage
+    return 1
+  fi
 
- while [ -n "$1" ]; do
-   if [ "--" = "$1" ]; then
-     shift
-     break
-   fi
-   case "$1" in
-     "-h" | "--help") # print usage and exit
-       usage
-       return 0
-       ;;
+  while [ -n "$1" ]; do
+    if [ "--" = "$1" ]; then
+      shift
+      break
+    fi
+    case "$1" in
+      "-h" | "--help") # print usage and exit
+        usage
+        return 0
+        ;;
 
-     "--dry-run") # print emacsclient command
-       DRYRUN=1
-       ;;
+      "--dry-run") # print emacsclient command
+        DRYRUN=1
+        ;;
 
-     "-D" | "--describe")
-       WRAPPER="$W_DESCRIBE"
-       MACRO_CALL="(SPC_KEYS)"
-       ;;
+      "-D" | "--describe")
+        WRAPPER="$W_DESCRIBE"
+        MACRO_CALL="(SPC_KEYS)"
+        ;;
 
-     "-M" | "--macro-caller") # Use next argument as code wrapper.
-       shift
-       MACRO_CALL="$1"
-       ;;
+      "-M" | "--macro-caller") # Use next argument as code wrapper.
+        shift
+        MACRO_CALL="$1"
+        ;;
 
-     "-W" | "--wrapper") # Use next argument as code wrapper.
-       shift
-       WRAPPER="$1"
-       ;;
+      "-W" | "--wrapper") # Use next argument as code wrapper.
+        shift
+        WRAPPER="$1"
+        ;;
 
-     "-WPRINT")
-       WRAPPER="$W_PRINTBUF"
-       ;;
+      "-WPRINT")
+        WRAPPER="$W_PRINTBUF"
+        ;;
 
-     "-L" | "--leader") # Use next argument as leader.
-       shift
-       LEADER="$1"
-       ;;
+      "-L" | "--leader") # Use next argument as leader.
+        shift
+        LEADER="$1"
+        ;;
 
-     "-l" | "--lisp") # Use next argument literally.
-       shift
-       KEYS+=("$1")
-       ;;
+      "-l" | "--lisp") # Use next argument literally.
+        shift
+        KEYS+=("$1")
+        ;;
 
-     "-r" | "--raw") # Use next argument raw.
-       shift
-       KEYS+=("$(echo -n "$1" | vquote64)")
-       ;;
+      "-r" | "--raw") # Use next argument raw.
+        shift
+        KEYS+=("$(echo -n "$1" | vquote64)")
+        ;;
 
-     "-f-" | "--stdin") # Read raw content from STDIN
-       KEYS+=("$(vquote64)")
-       ;;
+      "-f-" | "--stdin") # Read raw content from STDIN
+        KEYS+=("$(vquote64)")
+        ;;
 
-     "-f" | "--file-raw") # Read raw content from FILE
-       shift
-       KEYS+=("$(vquote64 < "$1")")
-       ;;
+      "-f" | "--file-raw") # Read raw content from FILE
+        shift
+        KEYS+=("$(vquote64 < "$1")")
+        ;;
 
-     *)
-       KEYS+=("$(echo -n "$1" | vqKbd64)")
-       ;;
-   esac
-   shift
- done
+      *)
+        KEYS+=("$(echo -n "$1" | vqKbd64)")
+        ;;
+    esac
+    shift
+  done
 
- ARGV=("${@}")
+  ARGV=("${@}")
 
- if [ -n "$LEADER" ]; then
-   KEYS=("$(echo -n "$LEADER" | vqKbd64)" "${KEYS[@]}")
- fi
+  if [ -n "$LEADER" ]; then
+    KEYS=("$(echo -n "$LEADER" | vqKbd64)" "${KEYS[@]}")
+  fi
 
- if [ -z "$MACRO_CALL" ]; then
-   MACRO_CALL="(call-interactively (lambda () (interactive) (execute-kbd-macro (SPC_KEYS))))"
- fi
- SPC_ELISP="(cl-flet ((SPC_KEYS nil (vconcat ${KEYS[@]}))) ${MACRO_CALL[@]})"
+  if [ -z "$MACRO_CALL" ]; then
+    MACRO_CALL="(call-interactively (lambda () (interactive) (execute-kbd-macro (SPC_KEYS))))"
+  fi
+  SPC_ELISP="(cl-flet ((SPC_KEYS nil (vconcat ${KEYS[@]}))) ${MACRO_CALL[@]})"
 
+  if [ -n "$WRAPPER" ]; then
+    SPC_ELISP="(cl-flet ((SPC_MACRO nil $SPC_ELISP)) ${WRAPPER[@]})"
+  fi
 
- if [ -n "$WRAPPER" ]; then
-   SPC_ELISP="(cl-flet ((SPC_MACRO nil $SPC_ELISP)) ${WRAPPER[@]})"
- fi
+  if [ "1" = "$DRYRUN" ]; then
+    echo ${SPC_CLIENT_CMD:-"emacsclient"} --eval "\"$(echo -n "$SPC_ELISP" | sed -e 's|"|\\"|g')\"" ${ARGV[@]}
+    return 0
+  fi
 
- if [ "1" = "$DRYRUN" ]; then
-   echo ${SPC_CLIENT_CMD:-"emacsclient"} --eval "\"$(echo -n "$SPC_ELISP" | sed -e 's|"|\\"|g')\"" ${ARGV[@]}
-   return 0
- fi
+  ARGV+=("--eval" "$SPC_ELISP")
 
- ARGV+=("--eval" "$SPC_ELISP")
-
- ${SPC_CLIENT_CMD:-"emacsclient"} ${SPC_CLIENT_OPTS[@]} "${ARGV[@]}" | emacs_string
+  ${SPC_CLIENT_CMD:-"emacsclient"} ${SPC_CLIENT_OPTS[@]} "${ARGV[@]}" | emacs_string
 }
 
 SPC "${@}"
