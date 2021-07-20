@@ -1,1 +1,1 @@
-nix build -L --no-link -f test.nix
+nix build -L --no-link --show-trace -f test.nix "${@}"
