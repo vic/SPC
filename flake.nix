@@ -27,6 +27,11 @@
           batsRunner = mkDerivation (with pkgs; rec {
             name = "bats-runner";
             nativeBuildInputs = [ makeWrapper ];
+            SPC = writeShellScriptBin "SPC" ''
+              #!${bash}/bin/bash
+
+              ${builtins.readFile ./bin/SPC}
+            '';
             runner = writeShellScriptBin "bats-runner" "bats ${./test}";
             batsLib = writeTextFile {
               name = "load.bash";
@@ -38,10 +43,9 @@
             phases = [ "wrap" ];
             wrap = ''
               mkdir -p $out/bin
-              ln -s ${./bin/SPC} $out/bin/SPC
               makeWrapper ${runner}/bin/bats-runner $out/bin/bats-runner \
                 --prefix PATH : ${
-                  lib.makeBinPath (devPkgs ++ [ coreutils emacs-nox ])
+                  lib.makeBinPath (devPkgs ++ [ SPC coreutils emacs-nox ])
                 } \
                 --prefix PATH : $out/bin \
                 --set BATS_LIB "${batsLib}"
