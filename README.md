@@ -37,6 +37,7 @@ Running `SPC --help` shows the command usage, included here for reference:
 
 
 <!--BEGIN_HELP-->
+
 ```
 SPC - Send a SPC keyboard macro to Spacemacs or DOOM Emacs via emacsclient.
 
@@ -86,13 +87,13 @@ OPTIONS
 
   -W, --wrapper <WRAPPER>
                       Wrap the keyboard macro invocation inside custom lisp.
-                      The WRAPPER code must include a `SPC_ELISP` placeholder
+                      The WRAPPER code must include a `(SPC_MACRO)` lisp FORM
                       that will be replaced with the actual macro invocation.
 
                       This option allows you to eg, select a custom buffer or
                       doing anything special before/after the kbd macro is sent.
 
-                      eg. `-W '(message "%s" (quote SPC_ELISP))'` will just echo
+                      eg. `-W '(message "%s" (quote (SPC_MACRO)))'` will just echo
                       the generated code inside Emacs and actually do nothing.
 
   -WPRINT
@@ -106,14 +107,14 @@ OPTIONS
 
   -M, --macro-caller <MACRO_CALLER>
                       Custom Emacs lisp code that executes a keyboard macro.
-                      The MACRO_CALLER code must include a `SPC_ELISP`
-                      placeholder that will be replaced with the actual
+                      The MACRO_CALLER code must include a `(SPC_KEYS)`
+                      lisp FORM that will be replaced with the actual
                       keys vector.
 
-                      By default it uses `(execute-kbd-macro SPC_ELISP)`
+                      By default it uses `(execute-kbd-macro (SPC_KEYS))`
                       but can be overriden to and not evaluate the keys at all.
 
-                      eg. `-M '(key-description SPC_ELISP)'` just prints the
+                      eg. `-M '(key-description (SPC_KEYS))'` just prints the
                       keysequence that Emacs received.
 
   --dry-run
