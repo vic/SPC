@@ -23,6 +23,12 @@ just as if you would have typed it.
 Just download `bin/SPC` and place it somewhere in your `PATH`.
 It will need basic coreutils and `base64` command for sending raw inputs.
 
+This repo is Nix enabled and can be run using: 
+
+```
+nix run github:vic/SPC -- --help
+```
+
 Some people might also want to create several command aliases to ease frequent use
 cases. See the [Integrations] section.
 
