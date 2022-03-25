@@ -24,14 +24,15 @@
 
           devPkgs = with pkgs; [ shellcheck bats shfmt nixfmt ];
 
+          SPC = with pkgs; writeShellScriptBin "SPC" ''
+            #!${bash}/bin/bash
+
+            ${builtins.readFile ./bin/SPC}
+          '';
+
           batsRunner = mkDerivation (with pkgs; rec {
             name = "bats-runner";
             nativeBuildInputs = [ makeWrapper ];
-            SPC = writeShellScriptBin "SPC" ''
-              #!${bash}/bin/bash
-
-              ${builtins.readFile ./bin/SPC}
-            '';
             runner = writeShellScriptBin "bats-runner" "bats ${./test}";
             batsLib = writeTextFile {
               name = "load.bash";
@@ -54,7 +55,9 @@
 
         in rec {
 
-          devShell = pkgs.mkShell {
+          packages.default = SPC;
+
+          devShells.default = pkgs.mkShell {
             name = "dev";
             packages = devPkgs;
           };
