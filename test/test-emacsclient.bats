@@ -31,8 +31,7 @@ function teardown() {
   expected="$(
 cat <<-'EOF'
 HELLO WORLD
-";; This buffer is for text that is not saved, and for Lisp evaluation.
-;; To create a file, visit it with C-x C-f and enter text in its buffer.
+";; This buffer is for text that is not saved, and for Lisp evaluation.\n;; To create a file, visit it with C-x C-f and enter text in its buffer.\n\n"
 EOF
 )"
   assert_output "$expected"

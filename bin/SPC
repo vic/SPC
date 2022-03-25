@@ -275,7 +275,7 @@ function SPC {
   ARGV+=("--eval" "$SPC_ELISP")
 
   # shellcheck disable=SC2086 # SPC_CLIENT_OPTS should expand since it can be a single string with many options
-  ${SPC_CLIENT_CMD:-"emacsclient"} ${SPC_CLIENT_OPTS[*]} "${ARGV[@]}" | emacs_string
+  exec ${SPC_CLIENT_CMD:-"emacsclient"} ${SPC_CLIENT_OPTS[*]} "${ARGV[@]}"
 }
 
 SPC "${@}"
