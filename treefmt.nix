@@ -8,8 +8,8 @@
     "bin/SPC"
   ];
   programs.shellcheck.excludes = [ ".envrc" ];
-  programs.beautysh.enable = true;
-  programs.beautysh.includes = [
+  programs.shfmt.enable = true;
+  programs.shfmt.includes = [
     "*.bats"
     "bin/SPC"
   ];

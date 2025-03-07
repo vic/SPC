@@ -193,61 +193,61 @@ function SPC {
       break
     fi
     case "$1" in
-      "-h" | "--help") # print usage and exit
-        usage
-        return 0
-        ;;
+    "-h" | "--help") # print usage and exit
+      usage
+      return 0
+      ;;
 
-      "--dry-run") # print emacsclient command
-        DRYRUN=1
-        ;;
+    "--dry-run") # print emacsclient command
+      DRYRUN=1
+      ;;
 
-      "-D" | "--describe")
-        WRAPPER="$W_DESCRIBE"
-        MACRO_CALL="(SPC_KEYS)"
-        ;;
+    "-D" | "--describe")
+      WRAPPER="$W_DESCRIBE"
+      MACRO_CALL="(SPC_KEYS)"
+      ;;
 
-      "-M" | "--macro-caller") # Use next argument as code wrapper.
-        shift
-        MACRO_CALL="$1"
-        ;;
+    "-M" | "--macro-caller") # Use next argument as code wrapper.
+      shift
+      MACRO_CALL="$1"
+      ;;
 
-      "-W" | "--wrapper") # Use next argument as code wrapper.
-        shift
-        WRAPPER="$1"
-        ;;
+    "-W" | "--wrapper") # Use next argument as code wrapper.
+      shift
+      WRAPPER="$1"
+      ;;
 
-      "-WPRINT")
-        WRAPPER="$W_PRINTBUF"
-        ;;
+    "-WPRINT")
+      WRAPPER="$W_PRINTBUF"
+      ;;
 
-      "-L" | "--leader") # Use next argument as leader.
-        shift
-        LEADER="$1"
-        ;;
+    "-L" | "--leader") # Use next argument as leader.
+      shift
+      LEADER="$1"
+      ;;
 
-      "-l" | "--lisp") # Use next argument literally.
-        shift
-        KEYS+=("$1")
-        ;;
+    "-l" | "--lisp") # Use next argument literally.
+      shift
+      KEYS+=("$1")
+      ;;
 
-      "-r" | "--raw") # Use next argument raw.
-        shift
-        KEYS+=("$(echo -n "$1" | vquote64)")
-        ;;
+    "-r" | "--raw") # Use next argument raw.
+      shift
+      KEYS+=("$(echo -n "$1" | vquote64)")
+      ;;
 
-      "-f-" | "--stdin") # Read raw content from STDIN
-        KEYS+=("$(vquote64)")
-        ;;
+    "-f-" | "--stdin") # Read raw content from STDIN
+      KEYS+=("$(vquote64)")
+      ;;
 
-      "-f" | "--file-raw") # Read raw content from FILE
-        shift
-        KEYS+=("$(vquote64 <"$1")")
-        ;;
+    "-f" | "--file-raw") # Read raw content from FILE
+      shift
+      KEYS+=("$(vquote64 <"$1")")
+      ;;
 
-      *)
-        KEYS+=("$(echo -n "$1" | vqKbd64)")
-        ;;
+    *)
+      KEYS+=("$(echo -n "$1" | vqKbd64)")
+      ;;
     esac
     shift
   done
