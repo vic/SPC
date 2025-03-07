@@ -4,7 +4,7 @@
 #
 
 function usage {
-  cat <<- 'EOF'
+  cat <<-'EOF'
 SPC - Send a SPC keyboard macro to Spacemacs or DOOM Emacs via emacsclient.
 
 USAGE
@@ -178,7 +178,7 @@ function emacs_string {
 }
 
 function SPC {
-  declare KEY SPC_ELISP DRYRUN=0 WRAPPER="${SPC_WRAPPER}" MACRO_CALL="${SPC_MACRO_CALLER}" LEADER="${SPC_LEADER:-"SPC"}"
+  declare KEY SPC_ELISP DRYRUN=0 WRAPPER="${SPC_WRAPPER:-}" MACRO_CALL="${SPC_MACRO_CALLER:-}" LEADER="${SPC_LEADER:-"SPC"}"
   declare -a ARGV KEYS
 
   # if no STDIN and no command line arguments given use some default
@@ -187,7 +187,7 @@ function SPC {
     return 1
   fi
 
-  while [ -n "$1" ]; do
+  while [ -n "${1:-}" ]; do
     if [ "--" = "$1" ]; then
       shift
       break
@@ -242,7 +242,7 @@ function SPC {
 
       "-f" | "--file-raw") # Read raw content from FILE
         shift
-        KEYS+=("$(vquote64 < "$1")")
+        KEYS+=("$(vquote64 <"$1")")
         ;;
 
       *)
@@ -274,7 +274,7 @@ function SPC {
 
   ARGV+=("--eval" "$SPC_ELISP")
 
-  # shellcheck disable=SC2086 # SPC_CLIENT_OPTS should expand since it can be a single string with many options
+  # shellcheck disable=SC2048,SC2086 # SPC_CLIENT_OPTS should expand since it can be a single string with many options
   exec ${SPC_CLIENT_CMD:-"emacsclient"} ${SPC_CLIENT_OPTS[*]} "${ARGV[@]}"
 }
 

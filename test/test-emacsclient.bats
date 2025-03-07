@@ -8,7 +8,8 @@ function setup() {
   chmod 0700 "$BATS_TMPDIR/socket" # emacs server requires privacy
   emacs -Q -l "$BATS_TEST_DIRNAME/init.el" --daemon
 
-  export EMACS_PID="$(< "$BATS_TMPDIR"/socket/PID)"
+  EMACS_PID="$(<"$BATS_TMPDIR"/socket/PID)"
+  export EMACS_PID
   export SPC_CLIENT_OPTS="-s ${BATS_TMPDIR}/socket/server"
   export SPC_LEADER="C-M-H-x"
 }
@@ -20,7 +21,8 @@ function teardown() {
 @test 'Call hello on emacs server' {
   run SPC hello WORLD RET
   assert_success
-  declare expected="$(echo -ne "HELLO WORLD\nnil")"
+  declare expected
+  expected="$(echo -ne "HELLO WORLD\nnil")"
   assert_output "$expected"
 }
 
@@ -29,10 +31,10 @@ function teardown() {
   assert_success
   declare expected
   expected="$(
-cat <<-'EOF'
+    cat <<-'EOF'
 HELLO WORLD
-";; This buffer is for text that is not saved, and for Lisp evaluation.\n;; To create a file, visit it with C-x C-f and enter text in its buffer.\n\n"
+";; This buffer is for text that is not saved, and for Lisp evaluation.\n;; To create a file, visit it with ‘C-x C-f’ and enter text in its buffer.\n\n"
 EOF
-)"
+  )"
   assert_output "$expected"
 }

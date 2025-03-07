@@ -19,7 +19,6 @@ function setup() {
   assert_output -p 'dummy --foo'
 }
 
-
 @test 'Default SPC_MACRO_CALLER does execute-kbd-macro' {
   run SPC ff
   assert_success
@@ -74,8 +73,8 @@ function setup() {
 }
 
 @test '--file-raw encodes raw string as base64' {
-  echo -n 'A' > "$BATS_TMPDIR/a"
-  echo -n 'B' > "$BATS_TMPDIR/b"
+  echo -n 'A' >"$BATS_TMPDIR/a"
+  echo -n 'B' >"$BATS_TMPDIR/b"
   run SPC --file-raw "$BATS_TMPDIR/a" -f "$BATS_TMPDIR/b"
   assert_success
   assert_output -p '(vconcat (kbd "SPC") (string-to-vector (base64-decode-string "QQ==")) (string-to-vector (base64-decode-string "Qg==")))'
@@ -90,7 +89,6 @@ function setup() {
   assert_success
   assert_output -p '(vconcat (kbd "SPC") (string-to-vector (base64-decode-string "Qg==")))'
 }
-
 
 @test '--leader can replace the first SPC key to send' {
   run SPC HELLO --leader 'FOO'

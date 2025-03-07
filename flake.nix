@@ -1,90 +1,18 @@
 {
-  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
-  inputs.flake-utils.url = "github:numtide/flake-utils";
-  inputs.flake-utils.inputs.nixpkgs.follows = "nixpkgs";
+
+  inputs.nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
+
+  inputs.blueprint.url = "github:numtide/blueprint";
+  inputs.blueprint.inputs.nixpkgs.follows = "nixpkgs";
+
+  inputs.treefmt-nix.url = "github:numtide/treefmt-nix";
+  inputs.treefmt-nix.inputs.nixpkgs.follows = "nixpkgs";
 
   inputs.bats-support.url = "github:ztombol/bats-support";
   inputs.bats-support.flake = false;
   inputs.bats-assert.url = "github:bats-core/bats-assert";
   inputs.bats-assert.flake = false;
 
-  outputs = { self, nixpkgs, flake-utils, ... }@inputs:
-    let
-      allSystems = flake-utils.lib.defaultSystems ++ [ "aarch64-darwin" ];
-      perSystem = (system:
-        let
-          pkgs = import nixpkgs {
-            system =
-              if system == "aarch64-darwin" then "x86_64-darwin" else system;
-          };
+  outputs = inputs: inputs.blueprint { inherit inputs; };
 
-          lib = nixpkgs.lib;
-
-          mkDerivation = builtins.trace system pkgs.stdenvNoCC.mkDerivation;
-
-          devPkgs = with pkgs; [ shellcheck bats shfmt nixfmt ];
-
-          SPC = with pkgs; writeShellScriptBin "SPC" ''
-            #!${bash}/bin/bash
-
-            ${builtins.readFile ./bin/SPC}
-          '';
-
-          batsRunner = mkDerivation (with pkgs; rec {
-            name = "bats-runner";
-            nativeBuildInputs = [ makeWrapper ];
-            runner = writeShellScriptBin "bats-runner" "bats ${./test}";
-            batsLib = writeTextFile {
-              name = "load.bash";
-              text = ''
-                source ${inputs.bats-support}/load.bash
-                source ${inputs.bats-assert}/load.bash
-              '';
-            };
-            phases = [ "wrap" ];
-            wrap = ''
-              mkdir -p $out/bin
-              makeWrapper ${runner}/bin/bats-runner $out/bin/bats-runner \
-                --prefix PATH : ${
-                  lib.makeBinPath (devPkgs ++ [ SPC coreutils emacs-nox ])
-                } \
-                --prefix PATH : $out/bin \
-                --set BATS_LIB "${batsLib}"
-            '';
-          });
-
-        in rec {
-
-          packages.default = SPC;
-
-          devShells.default = pkgs.mkShell {
-            name = "dev";
-            packages = devPkgs;
-          };
-
-          checks.test = mkDerivation (with lib;
-            with pkgs; {
-              name = "test";
-              phases = [ "shfmt" "shellcheck" "bats" ];
-
-              shfmt = ''
-                ${shfmt}/bin/shfmt -i 2 -ci -sr -d .
-                touch $out
-              '';
-
-              shellcheck = ''
-                ${shellcheck}/bin/shellcheck -s bash ${./.}/bin/SPC
-                touch $out
-              '';
-
-              bats = ''
-                ${batsRunner}/bin/bats-runner
-                touch $out
-              '';
-
-            });
-
-        });
-
-    in (flake-utils.lib.eachSystem allSystems perSystem);
 }

@@ -2,6 +2,42 @@
 
 An utility for sending keyboard macros to [Spacemacs](https://www.spacemacs.org/) or [DOOM Emacs](https://github.com/hlissner/doom-emacs) via emacsclient.
 
+### Usage
+
+Directly from this repository using nix command:
+
+```shell
+nix run github:vic/SPC
+```
+
+or by installing `SPC` on your system.
+
+### Installing with NixOS or Home-Manager
+
+This flake provides the SPC package that can be added to your environment packages.
+
+You might also want to override the emacs package to use.
+
+```nix
+# home-configuration.nix
+home.packages = [
+  (inputs.SPC.packages.${system}.SPC.override { emacs = pkgs.emacs-nox; })
+]
+```
+
+
+### Imperative Installation
+
+Install `SPC` in your nix profile.
+
+```shell
+nix profile install github:vic/SPC
+SPC --help
+```
+
+
+### Motivation
+
 `SPC` was [born](https://github.com/vic/vix/blob/c55260f9591c7b243145fbbab37d68e775783a8d/vix/modules/vic/emacs/default.nix#L49) as an integration utility to make other applications interact with DOOM/Spacemacs by sending keystrokes.
 
 For example, you can instruct iTerm2 to open a file on click by giving it the following
@@ -18,25 +54,15 @@ some things that can invoke Emacs macros. eg. creating ORG Agenda entries or usi
 configuration and will happily send any keyboard macro from the terminal into Emacs
 just as if you would have typed it.
 
-### Installation
-
-Just download `bin/SPC` and place it somewhere in your `PATH`.
-It will need basic coreutils and `base64` command for sending raw inputs.
-
-This repo is Nix enabled and can be run using: 
-
-```
-nix run github:vic/SPC -- --help
-```
-
 Some people might also want to create several command aliases to ease frequent use
 cases. See the [Integrations] section.
 
 
-### Usage
+### Manual Page
 
 `SPC` expects an Emacs daemon to be already running and ready to receive keyboard macros.
 You can start such a daemon manually within Emacs by executing `M-x server-start`.
+Or by using a nixos or nix-darwin service that starts an emacs daemon.
 
 There are many options that let you customize how `SPC` talks to your Emacs daemon.
 Running `SPC --help` shows the command usage, included here for reference:
