@@ -1,16 +1,20 @@
 # SPC
 
-An utility for sending keyboard macros to [Spacemacs](https://www.spacemacs.org/) or [DOOM Emacs](https://github.com/hlissner/doom-emacs) via emacsclient.
-
-### Usage
-
-Directly from this repository using nix command:
-
 ```shell
 nix run github:vic/SPC
 ```
 
-or by installing `SPC` on your system.
+An utility for sending keyboard macros to [Spacemacs](https://www.spacemacs.org/) or [DOOM Emacs](https://github.com/hlissner/doom-emacs) via emacsclient.
+
+### Usage
+
+`SPC` expects an Emacs daemon to be already running and ready to receive keyboard macros.
+You can start such a daemon manually within Emacs by executing `M-x server-start`.
+Or by using a nixos or nix-darwin service that starts an emacs daemon.
+
+
+There are many options that let you customize how `SPC` talks to your Emacs daemon.
+Running `SPC --help` shows the command usage.
 
 ``` shell
 # This example for Doom Emacs does the following:
@@ -20,14 +24,6 @@ or by installing `SPC` on your system.
 # - run SPC f s to save the file
 SPC ff -r foo RET i -r "Hello World" ESC SPC fs RET
 ```
-
-`SPC` expects an Emacs daemon to be already running and ready to receive keyboard macros.
-You can start such a daemon manually within Emacs by executing `M-x server-start`.
-Or by using a nixos or nix-darwin service that starts an emacs daemon.
-
-There are many options that let you customize how `SPC` talks to your Emacs daemon.
-Running `SPC --help` shows the command usage.
-
 
 ### Installing with NixOS or Home-Manager
 
