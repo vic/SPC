@@ -12,6 +12,15 @@ nix run github:vic/SPC
 
 or by installing `SPC` on your system.
 
+``` shell
+# This example for Doom Emacs does the following:
+# - run SPC f f to open a file named foo
+# - enter insert mode and write "Hello World"
+# - exit to normal mode
+# - run SPC f s to save the file
+SPC ff -r foo RET i -r "Hello World" ESC SPC fs RET
+```
+
 ### Installing with NixOS or Home-Manager
 
 This flake provides the SPC package that can be added to your environment packages.
