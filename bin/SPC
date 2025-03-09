@@ -32,7 +32,7 @@ OPTIONS
 
                       eg. `-r --lisp` will send `(kbd "- - l i s p")` to Emacs.
 
-  -f, --file-raw <FILE>
+  -f, --file <FILE>
                       Sends all content from FILE as if directly typed on Emacs.
 
   -f-, --stdin
@@ -50,6 +50,9 @@ OPTIONS
 
                       Can also be used to remove the leader, eg:
                       `SPC -L '' M-x doctor RET`
+
+  -N, --no-leader
+                      Dont use a leader key. Equivalent to -L ''.
 
   -W, --wrapper <WRAPPER>
                       Wrap the keyboard macro invocation inside custom lisp.
@@ -118,12 +121,14 @@ ENVIRONMENT VARIABLES
                       tell emacsclient to always use the terminal UI.
 
 EXAMPLES
+  # Find a file foo and write Hello World to it
+  SPC ff -r foo RET i -r "Hello World" ESC SPC fs RET
 
   # Describe what `SPC f f` does
   SPC -D ff          # => SPC f f runs the command counsel-find-file
 
   # Remove leader, describe `M-x`
-  SPC -L '' -D M-x   # => M-x runs the command counsel-M-x
+  SPC -N -D M-x   # => M-x runs the command counsel-M-x
 
   # find file in remote Emacs and go to 10th line
   SPC ff -r "$PWD/README.md" RET 10 gg
@@ -226,6 +231,10 @@ function SPC {
       LEADER="$1"
       ;;
 
+    "-N" | "--no-leader") # Use next argument as leader.
+      LEADER=""
+      ;;
+
     "-l" | "--lisp") # Use next argument literally.
       shift
       KEYS+=("$1")
@@ -240,9 +249,13 @@ function SPC {
       KEYS+=("$(vquote64)")
       ;;
 
-    "-f" | "--file-raw") # Read raw content from FILE
+    "-f" | "--file") # Read raw content from FILE
       shift
-      KEYS+=("$(vquote64 <"$1")")
+      if [ "-" = "${1:-}" ]; then
+        KEYS+=("$(vquote64)") # from stdin
+      else
+        KEYS+=("$(vquote64 <"$1")")
+      fi
       ;;
 
     *)

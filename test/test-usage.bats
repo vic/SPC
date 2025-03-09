@@ -72,10 +72,10 @@ function setup() {
   assert_output -p '(vconcat (kbd "SPC") (string-to-vector (base64-decode-string "QQ==")) (string-to-vector (base64-decode-string "Qg==")))'
 }
 
-@test '--file-raw encodes raw string as base64' {
+@test '--file encodes raw string as base64' {
   echo -n 'A' >"$BATS_TMPDIR/a"
   echo -n 'B' >"$BATS_TMPDIR/b"
-  run SPC --file-raw "$BATS_TMPDIR/a" -f "$BATS_TMPDIR/b"
+  run SPC --file "$BATS_TMPDIR/a" -f "$BATS_TMPDIR/b"
   assert_success
   assert_output -p '(vconcat (kbd "SPC") (string-to-vector (base64-decode-string "QQ==")) (string-to-vector (base64-decode-string "Qg==")))'
 }
@@ -99,12 +99,20 @@ function setup() {
   assert_success
   assert_output -p '(vconcat (kbd "HELLO"))'
 
+  run SPC HELLO -N
+  assert_success
+  assert_output -p '(vconcat (kbd "HELLO"))'
+
+  run SPC HELLO --no-leader
+  assert_success
+  assert_output -p '(vconcat (kbd "HELLO"))'
+
   run env SPC_LEADER="BAR" SPC HELLO
   assert_success
   assert_output -p '(vconcat (kbd "BAR") (kbd "HELLO"))'
 }
 
-@test '--list can be used to insert the output of any lisp form in the keys vector' {
+@test '--lisp can be used to insert the output of any lisp form in the keys vector' {
   run SPC --lisp '(foo)'
   assert_success
   assert_output -p '(vconcat (kbd "SPC") (foo))'
